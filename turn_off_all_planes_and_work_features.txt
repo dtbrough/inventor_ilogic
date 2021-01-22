@@ -1,0 +1,217 @@
+﻿'This Rule will Present the user with a multiple choice input box. After the choice is made the rule will set visibility for the selected object to off.
+
+Class ThisRule
+	' Setup Progress Bar
+	Dim ReferenceCount As Integer
+	Dim oStep As Integer
+	Dim oMessage As String = "Setting visibility for objects to off"
+	Dim oProgressBar As Inventor.ProgressBar
+	Dim DocFailed As Integer
+
+Sub Main()
+	'get the active document
+	Dim oDoc As Document
+	oDoc = ThisApplication.ActiveDocument
+
+	'check if the rule is run on an Assembly
+	Dim Assydoc As AssemblyDocument
+	If oDoc.DocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
+		Assydoc = oDoc
+	Else
+		MessageBox.Show("Rule needs to be run from Assembly", "Rule: Object visibility")
+		Exit Sub
+	End If
+
+
+	'Present user with multiple choice
+	Dim Options() As String = {"All", "Only Origin planes", "Work planes and Origin planes", "Axis only", "Work points only", "Sketches only"}
+	Result1 = InputListBox("Please select", Options, Options(0), Title := "Object Visibility", ListName := "List")
+
+	'perform actions on basis of multiple choice. First all documents in the assembly are counted, then the objects are turned off whilst the user is presented with a progress bar
+	Select Case Result1
+		Case options(0)
+			CountReferencedDocuments(Assydoc, 4)
+			RemoveWorkPlanes(Assydoc)
+			RemoveSketches(Assydoc)
+			RemoveWorkpoints(Assydoc)
+			RemoveAxis(Assydoc)
+		Case options(1)
+			CountReferencedDocuments(Assydoc, 1)
+			RemoveOriginPlanes(Assydoc)
+		Case options(2)
+			CountReferencedDocuments(Assydoc, 1)
+			RemoveWorkPlanes(Assydoc)
+		Case options(3)
+			CountReferencedDocuments(Assydoc, 1)
+			RemoveAxis(Assydoc)
+		Case options(4)
+			CountReferencedDocuments(Assydoc, 1)
+			RemoveWorkpoints(Assydoc)
+		Case options(5)
+			CountReferencedDocuments(Assydoc, 1)
+			RemoveSketches(Assydoc)
+	End Select
+
+	oProgressBar.Close
+
+	'Check if there are any failed files, and show user how many files.
+	If DocFailed <> 0 Then
+		MessageBox.Show(DocFailed & " Objects failed to set to invisible", "Object Visibility")
+	End If
+	'Update file
+	iLogicVb.UpdateWhenDone = True
+End Sub
+
+'this sub will count the objects and create the progress bar
+Sub CountReferencedDocuments(Assydoc As AssemblyDocument, Passes As Integer)
+	For Each doc As Document In Assydoc.AllReferencedDocuments
+		If (doc.DocumentType = DocumentTypeEnum.kPartDocumentObject) And doc.IsModifiable = True Then
+			ReferenceCount = ReferenceCount + Passes
+		End If
+	 Next
+	oProgressBar = ThisApplication.CreateProgressBar(False, ReferenceCount, oMessage)
+End Sub
+
+'This Sub will set visibility for all origin planes to off
+Sub RemoveOriginPlanes (Assydoc As AssemblyDocument)
+	For Each oWorkPlane In Assydoc.ComponentDefinition.WorkPlanes
+		If oWorkPlane.Name = "XY Plane" Or oWorkPlane.Name = "XZ Plane" Or oWorkPlane.Name = "YZ Plane"
+		oWorkPlane.Visible = False
+		End If
+	Next
+
+	For Each doc As Document In Assydoc.AllReferencedDocuments
+		If (doc.DocumentType = DocumentTypeEnum.kPartDocumentObject) And doc.IsModifiable = True Then
+		Dim Partdoc As PartDocument = doc
+			For Each oWorkPlane In Partdoc.ComponentDefinition.WorkPlanes
+				If oWorkPlane.Name = "XY Plane" Or oWorkPlane.Name = "XZ Plane" Or oWorkPlane.Name = "YZ Plane"
+					Try
+						oWorkPlane.Visible = False
+					Catch
+						DocFailed = DocFailed + 1
+					End Try
+				End If
+			Next
+		Partdoc.Update()
+		End If
+		oProgressBar.Message = ("File " & oStep & " of " & ReferenceCount & ", :Procesed ")
+		oProgressBar.UpdateProgress
+		oStep = oStep +1
+	Next
+End Sub
+
+'This Sub will set visibility for all work planes to off
+Sub RemoveWorkPlanes (Assydoc As AssemblyDocument)
+	For Each oWorkPlane In Assydoc.ComponentDefinition.WorkPlanes
+		oWorkPlane.Visible = False
+	Next
+
+	For Each doc As Document In Assydoc.AllReferencedDocuments
+		If (doc.DocumentType = DocumentTypeEnum.kPartDocumentObject) And doc.IsModifiable = True Then
+		Dim Partdoc As PartDocument = doc
+			For Each oWorkPlane In Partdoc.ComponentDefinition.WorkPlanes
+				Try
+					oWorkPlane.Visible = False
+				Catch
+					DocFailed = DocFailed + 1
+				End Try
+			Next
+		Partdoc.Update()
+		End If
+		oProgressBar.Message = ("File " & oStep & " of " & ReferenceCount & ", :Procesed ")
+		oProgressBar.UpdateProgress
+		oStep = oStep +1
+	Next
+End Sub
+
+'This Sub will set visibility for all work axis to off
+Sub RemoveAxis (Assydoc As AssemblyDocument)
+	For Each oAxes In Assydoc.ComponentDefinition.WorkPlanes
+		oAxes.Visible = False
+	Next
+
+	For Each doc As Document In Assydoc.AllReferencedDocuments
+		If (doc.DocumentType = DocumentTypeEnum.kPartDocumentObject) And doc.IsModifiable = True Then
+		Dim Partdoc As PartDocument = doc
+			For Each oAxes In Partdoc.ComponentDefinition.WorkAxes
+				Try
+					oAxes.Visible = False
+				Catch
+					DocFailed = DocFailed + 1
+				End Try
+			Next
+		Partdoc.Update()
+		End If
+		oProgressBar.Message = ("File " & oStep & " of " & ReferenceCount & ", :Procesed ")
+		oProgressBar.UpdateProgress
+		oStep = oStep +1
+	Next
+End Sub
+
+'This Sub will set visibility for all work points to off
+Sub RemoveWorkpoints (Assydoc As AssemblyDocument)
+	For Each oWorkPoint In Assydoc.ComponentDefinition.WorkPoints
+		oWorkPoint.Visible = False
+	Next
+
+	For Each doc As Document In Assydoc.AllReferencedDocuments
+		If (doc.DocumentType = DocumentTypeEnum.kPartDocumentObject) And doc.IsModifiable = True Then
+		Dim Partdoc As PartDocument = doc
+			For Each oWorkPoint In Partdoc.ComponentDefinition.WorkPoints
+				Try
+					oWorkPoint.Visible = False
+				Catch
+					DocFailed = DocFailed + 1
+				End Try
+			Next
+		Partdoc.Update()
+		End If
+		oProgressBar.Message = ("File " & oStep & " of " & ReferenceCount & ", :Procesed ")
+		oProgressBar.UpdateProgress
+		oStep = oStep +1
+	Next
+End Sub
+
+'This Sub will set visibility for all sketches to off
+Sub RemoveSketches(Assydoc As AssemblyDocument)
+	For Each doc As Document In Assydoc.AllReferencedDocuments
+		If (doc.DocumentType = DocumentTypeEnum.kPartDocumentObject) And doc.IsModifiable = True Then
+		Dim Partdoc As PartDocument = doc
+			For Each oSketch In Partdoc.ComponentDefinition.Sketches
+				Try
+					oSketch.Visible = False
+				Catch
+					DocFailed = DocFailed + 1
+				End Try
+			Next
+			For Each o3DSketch In Partdoc.ComponentDefinition.Sketches3D
+				Try
+				o3DSketch.Visible = False
+				Catch
+					DocFailed = DocFailed + 1
+				End Try
+			Next
+		Partdoc.Update()
+		End If
+		oProgressBar.Message = ("File " & oStep & " of " & ReferenceCount & ", :Procesed ")
+		oProgressBar.UpdateProgress
+		oStep = oStep +1
+	Next
+End Sub
+
+
+'Functions to parse Filename and folder from complete Path
+Public Function FileNameFromPath(strFullPath As String) As String
+	FileNameFromPath = Right(strFullPath, Len(strFullPath) - InStrRev(strFullPath, "\"))
+End Function
+
+Public Function FileNameFromPathNoExt(strFullPath As String) As String
+	Dim FileNameFromPath2 As String = FileNameFromPath(strFullPath)
+	FileNameFromPathNoExt = Left(FileNameFromPath2, (InStrRev(FileNameFromPath2, ".")-1))
+End Function
+
+Public Function FolderFromPath(strFullPath As String) As String
+	FolderFromPath = Left(strFullPath, InStrRev(strFullPath, "\"))
+End Function
+
+End Class

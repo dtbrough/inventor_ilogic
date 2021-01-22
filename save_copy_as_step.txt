@@ -1,0 +1,24 @@
+﻿' Get the STEP translator Add-In.
+Dim oSTEPTranslator As TranslatorAddIn
+oSTEPTranslator = ThisApplication.ApplicationAddIns.ItemById("{90AF7F40-0C01-11D5-8E83-0010B541CD80}")
+Dim oContext As TranslationContext
+oContext = ThisApplication.TransientObjects.CreateTranslationContext
+Dim oOptions As NameValueMap
+oOptions = ThisApplication.TransientObjects.CreateNameValueMap
+
+If oSTEPTranslator.HasSaveCopyAsOptions(ThisDoc.Document, oContext, oOptions) Then
+' Set application protocol.
+' 2 = AP 203 - Configuration Controlled Design
+' 3 = AP 214 - Automotive Design
+oOptions.Value("ApplicationProtocolType") = 3
+' Other options...
+'oOptions.Value("Author") = ""
+'oOptions.Value("Authorization") = ""
+'oOptions.Value("Description") = ""
+'oOptions.Value("Organization") = ""
+oContext.Type = IOMechanismEnum.kFileBrowseIOMechanism
+Dim oData As DataMedium
+oData = ThisApplication.TransientObjects.CreateDataMedium
+oData.FileName = ThisDoc.PathAndFileName(False) & ".stp"
+oSTEPTranslator.SaveCopyAs(ThisDoc.Document, oContext, oOptions, oData)
+End If

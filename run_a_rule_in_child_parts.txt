@@ -1,0 +1,40 @@
+﻿'Code snippet that Runs rule in all occurrences of an assembly (If rule is present in occurrence). Tested on Inventor 2018
+
+Sub Main()
+'Define the Assembly Document
+Dim oDoc As AssemblyDocument
+Dim RuleName As String = "save_copy_as_step"
+
+' check if active document is an assembly
+Try
+	oDoc = ThisApplication.ActiveDocument
+Catch
+	MessageBox.Show("Please run on assembly", "Run Rule")
+End Try
+
+Dim oOcc As ComponentOccurrence
+
+GoThrough:
+For Each oOcc In oDoc.ComponentDefinition.Occurrences
+		'Get Document from Occurrence
+		Dim oOccDoc As Document
+		oOccDoc = oOcc.Definition.Document
+
+		'Check if document is a part
+		If oOccDoc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
+
+			oOccDoc = oOcc.Definition.Document
+			Try
+			iLogicVb.RunRule(oOccDoc.DisplayName, RuleName)
+			'MessageBox.Show("Rule run in: " & oOccDoc.DisplayName, "Message for debugging purposes")
+			Catch
+				'MessageBox.Show("Rule not present in: " & oOccDoc.DisplayName, "Message for debugging purposes")
+			End Try
+		'if the document is an assembly we need to run the same code in each occurrence of that assembly (we uses a goto function)
+		Else If oOccDoc.DocumentType = DocumentTypeEnum.kAssemblyDocumentObject	Then
+			oDoc = oOccDoc
+			GoTo GoThrough
+		End If
+Next
+
+End Sub
