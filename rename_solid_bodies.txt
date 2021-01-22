@@ -1,0 +1,42 @@
+'------- start of ilogic ------
+'check for custom iProperty and add it if not found
+Dim prefix As String = "Prefix"
+customPropertySet = ThisDoc.Document.PropertySets.Item _
+("Inventor User Defined Properties")
+
+Try
+         prop= customPropertySet.Item(prefix)
+Catch
+      ' Assume error means not found
+            customPropertySet.Add("", prefix)
+End Try
+
+'write the part number to the Prefix iProperty if it is empty
+If iProperties.Value("Custom", "Prefix") = "" Then
+iProperties.Value("Custom", "Prefix") = iProperties.Value("Project", "Part Number") & "_"
+Else
+End If
+
+'check that this active document is a part file   
+Dim partDoc As PartDocument
+If ThisApplication.ActiveDocument.DocumentType <> kPartDocumentObject Then
+MessageBox.Show ("Please open a part document", "iLogic")
+End If
+
+'define the active document
+partDoc = ThisApplication.ActiveDocument
+Dim solid As SurfaceBody
+Dim i As Integer
+
+'get input from user
+prefix = InputBox("Enter a prefix for the solid body names", "iLogic", iProperties.Value("Custom", "Prefix"))
+
+'write input back to custom iProperty
+iProperties.Value("Custom", "Prefix") = prefix
+i = 1
+'rename all solid bodies incrementing suffix
+For Each solid In partDoc.ComponentDefinition.SurfaceBodies
+solid.Name = prefix + IIf(i < 10, "0" + CStr(i), CStr(i))
+i = i + 1
+Next
+'------- End Of ilogic ------
